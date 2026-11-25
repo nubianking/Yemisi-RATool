@@ -35,6 +35,54 @@ export interface ResumeData {
   experience: WorkExperience[];
 }
 
+export interface UsageMetadata {
+  task:
+    | 'tailor-resume'
+    | 'optimize-resume'
+    | 'application-answer'
+    | 'cover-letter'
+    | 'parse-resume'
+    | 'gap-analysis';
+  model: string;
+  costProfile: 'eco' | 'hybrid';
+  promptTokenCount: number;
+  candidatesTokenCount: number;
+  thoughtsTokenCount: number;
+  totalTokenCount: number;
+  estimatedCostUsd: number;
+  latencyMs: number;
+}
+
+export interface UsageRecord extends UsageMetadata {
+  id: string;
+  timestamp: number;
+  targetRole?: string;
+}
+
+export interface GapAnalysisMissingItem {
+  term: string;
+  category: string;
+  priority: 'Critical' | 'High' | 'Recommended';
+  jdEvidence: string;
+  suggestedPlacement: 'Summary' | 'Skills' | 'Experience' | 'Certifications';
+  actionTip: string;
+}
+
+export interface GapAnalysisUnderrepresentedItem {
+  term: string;
+  currentLocation: string;
+  recommendation: string;
+}
+
+export interface GapAnalysisResult {
+  overallCoverageScore: number;
+  executiveSummary: string;
+  missingKeywords: GapAnalysisMissingItem[];
+  underrepresentedSkills: GapAnalysisUnderrepresentedItem[];
+  strongMatches: string[];
+  _usage?: UsageMetadata;
+}
+
 export interface TailoredResume {
   summary: string;
   skills: string[];
@@ -46,6 +94,7 @@ export interface TailoredResume {
     keywordsUsed: string[];
     toneNotes: string;
   };
+  _usage?: UsageMetadata;
 }
 
 export interface HistoryItem {

@@ -1,8 +1,16 @@
 import React, { useState, useEffect } from 'react';
 import { TargetRole, TailoredResume, HistoryItem, ResumeData } from './types';
-import { generateTailoredResume, optimizeTailoredResume } from './services/geminiService';
+import { CostProfile } from './costCatalog';
+import {
+  generateTailoredResume,
+  optimizeTailoredResume,
+  getCostProfile,
+  setCostProfile as persistCostProfile,
+  COST_PROFILE_UPDATED_EVENT,
+} from './services/geminiService';
 import { TailoredView } from './components/TailoredView';
 import { HistoryPanel } from './components/HistoryPanel';
+import { CostOptimizationDashboard } from './components/CostOptimizationDashboard';
 import { Button } from './components/Button';
 import { ProfileEditor } from './components/ProfileEditor';
 import { ApplicationQAModal } from './components/ApplicationQAModal';
@@ -18,7 +26,8 @@ const App: React.FC = () => {
     return localStorage.getItem('role_architect_auth') === 'true';
   });
 
-  const [activeTab, setActiveTab] = useState<'create' | 'history'>('create');
+  const [activeTab, setActiveTab] = useState<'create' | 'history' | 'cost'>('create');
+  const [costProfile, setCostProfileState] = useState<CostProfile>(() => getCostProfile());
   const [targetRole, setTargetRole] = useState<TargetRole>(TargetRole.CLOUD_SECURITY);
   const [jobDescription, setJobDescription] = useState('');
   const [jobLink, setJobLink] = useState('');
@@ -55,11 +64,22 @@ const App: React.FC = () => {
         const hasSeniorRoleOrSummary =
           parsed.experience?.some((exp: any) => /\b(senior|sr\.?)\b/i.test(exp.role || '')) ||
           /^(senior|sr\.?)\s+/i.test(parsed.summary || '');
+        const hasTechnicalProjects = parsed.experience?.some(
+          (exp: any) => /^technical\s+(project|projects|summary)$/i.test((exp.company || '').trim())
+        );
         const hasFewCertifications = !parsed.certifications || parsed.certifications.length < 3;
 
         if (hasOldOluwayemisi || hasEliteHorizon || hasOldKhaime || hasOldKhamieTypo || hasBuffalo || hasOldBrooklyn || hasSeniorRoleOrSummary || hasFewCertifications) {
           localStorage.removeItem('role_architect_base_profile');
           return BASE_RESUME;
+        }
+        if (hasTechnicalProjects && Array.isArray(parsed.experience)) {
+          return {
+            ...parsed,
+            experience: parsed.experience.filter(
+              (exp: any) => !/^technical\s+(project|projects|summary)$/i.test((exp.company || '').trim())
+            ),
+          };
         }
         return parsed;
       }
@@ -88,6 +108,22 @@ const App: React.FC = () => {
   useEffect(() => {
     localStorage.setItem('role_architect_base_profile', JSON.stringify(baseProfile));
   }, [baseProfile]);
+
+  // Keep routing profile synced across components/tabs
+  useEffect(() => {
+    const syncProfile = () => setCostProfileState(getCostProfile());
+    window.addEventListener(COST_PROFILE_UPDATED_EVENT, syncProfile);
+    window.addEventListener('storage', syncProfile);
+    return () => {
+      window.removeEventListener(COST_PROFILE_UPDATED_EVENT, syncProfile);
+      window.removeEventListener('storage', syncProfile);
+    };
+  }, []);
+
+  const handleCostProfileChange = (profile: CostProfile) => {
+    const updated = persistCostProfile(profile);
+    setCostProfileState(updated);
+  };
 
   const handleLogin = () => {
     setIsAuthenticated(true);
@@ -154,9 +190,9 @@ const App: React.FC = () => {
         }
         return newHistory;
       });
-    } catch (err: any) {
-      alert(err?.message || "Failed to optimize resume. Please try again.");
+    } catch (err: unknown) {
       console.error(err);
+      throw err instanceof Error ? err : new Error("Failed to optimize resume. Please try again.");
     }
   };
 
@@ -185,8 +221,8 @@ const App: React.FC = () => {
   return (
     <div className="flex h-screen w-full overflow-hidden bg-black text-white selection:bg-white selection:text-black font-sans">
       
-      {/* Left Panel: Controls & History */}
-      <div className={`flex flex-col border-r border-neutral-800 transition-all duration-500 ease-in-out ${result ? 'w-1/3' : 'w-full max-w-4xl mx-auto border-r-0'} print:hidden`}>
+      {/* Left Panel: Controls, History & Cost Dashboard */}
+      <div className={`flex flex-col border-r border-neutral-800 transition-all duration-300 ease-in-out ${result ? 'w-1/3' : activeTab === 'cost' ? 'w-full max-w-6xl mx-auto border-r-0' : 'w-full max-w-4xl mx-auto border-r-0'} print:hidden`}>
         
         {/* Logo / Header */}
         <div className="p-8 pb-4 flex justify-between items-start">
@@ -215,20 +251,27 @@ const App: React.FC = () => {
         </div>
 
         {/* Navigation Tabs */}
-        <div className="px-8 flex gap-6 border-b border-neutral-800 mb-6">
+        <div className="px-8 flex gap-6 border-b border-neutral-800 mb-6 overflow-x-auto">
           <button 
             onClick={() => setActiveTab('create')}
-            className={`pb-4 text-sm font-medium transition-colors relative ${activeTab === 'create' ? 'text-white' : 'text-neutral-500 hover:text-neutral-300'}`}
+            className={`pb-4 text-sm font-medium transition-colors relative whitespace-nowrap shrink-0 ${activeTab === 'create' ? 'text-white' : 'text-neutral-500 hover:text-neutral-300'}`}
           >
             New Application
             {activeTab === 'create' && <span className="absolute bottom-0 left-0 w-full h-0.5 bg-white"></span>}
           </button>
           <button 
             onClick={() => setActiveTab('history')}
-            className={`pb-4 text-sm font-medium transition-colors relative ${activeTab === 'history' ? 'text-white' : 'text-neutral-500 hover:text-neutral-300'}`}
+            className={`pb-4 text-sm font-medium transition-colors relative whitespace-nowrap shrink-0 ${activeTab === 'history' ? 'text-white' : 'text-neutral-500 hover:text-neutral-300'}`}
           >
             History & Logs
             {activeTab === 'history' && <span className="absolute bottom-0 left-0 w-full h-0.5 bg-white"></span>}
+          </button>
+          <button 
+            onClick={() => setActiveTab('cost')}
+            className={`pb-4 text-sm font-medium transition-colors relative whitespace-nowrap shrink-0 ${activeTab === 'cost' ? 'text-white' : 'text-neutral-500 hover:text-neutral-300'}`}
+          >
+            Cost & Models
+            {activeTab === 'cost' && <span className="absolute bottom-0 left-0 w-full h-0.5 bg-white"></span>}
           </button>
         </div>
 
@@ -264,6 +307,52 @@ const App: React.FC = () => {
                       Open Writer
                     </Button>
                   </div>
+              </div>
+
+              {/* Model Routing Mode Toggle */}
+              <div className="space-y-2.5">
+                <div className="flex items-center justify-between gap-2">
+                  <label className="text-xs font-bold text-neutral-500 tracking-widest uppercase">
+                    Model Routing Mode
+                  </label>
+                  <button
+                    type="button"
+                    onClick={() => setActiveTab('cost')}
+                    className="text-xs text-neutral-400 hover:text-white transition-colors whitespace-nowrap shrink-0"
+                  >
+                    Inspect Cost & Models
+                  </button>
+                </div>
+                <div className="grid grid-cols-2 gap-2">
+                  <button
+                    type="button"
+                    onClick={() => handleCostProfileChange('eco')}
+                    className={`p-3 text-left border transition-colors ${
+                      costProfile === 'eco'
+                        ? 'bg-white text-black border-white'
+                        : 'bg-neutral-900 text-neutral-300 border-neutral-800 hover:border-neutral-600'
+                    }`}
+                  >
+                    <div className="text-xs font-semibold whitespace-nowrap">Eco · Flash-Lite</div>
+                    <div className={`text-[11px] mt-0.5 font-mono ${costProfile === 'eco' ? 'text-neutral-700' : 'text-neutral-500'}`}>
+                      gemini-3.1-flash-lite primary
+                    </div>
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => handleCostProfileChange('hybrid')}
+                    className={`p-3 text-left border transition-colors ${
+                      costProfile === 'hybrid'
+                        ? 'bg-white text-black border-white'
+                        : 'bg-neutral-900 text-neutral-300 border-neutral-800 hover:border-neutral-600'
+                    }`}
+                  >
+                    <div className="text-xs font-semibold whitespace-nowrap">Hybrid · Lite + Hydrogen</div>
+                    <div className={`text-[11px] mt-0.5 font-mono ${costProfile === 'hybrid' ? 'text-neutral-700' : 'text-neutral-500'}`}>
+                      gemini-4-hydrogen synthesis
+                    </div>
+                  </button>
+                </div>
               </div>
 
               {/* Base Profile Selection */}
@@ -438,6 +527,14 @@ const App: React.FC = () => {
             onClear={handleClearHistory}
           />
         )}
+
+        {/* Tab Content: COST & MODELS */}
+        {activeTab === 'cost' && (
+          <CostOptimizationDashboard
+            costProfile={costProfile}
+            onChangeCostProfile={handleCostProfileChange}
+          />
+        )}
       </div>
 
       {/* Right Panel: Result (Only visible when result exists) */}
@@ -446,17 +543,19 @@ const App: React.FC = () => {
           <TailoredView 
             data={result} 
             role={targetRole}
+            jobDescription={jobDescription}
             candidateName={baseProfile.name}
             contactInfo={baseProfile.contact}
             onBack={handleBack} 
             onOpenQA={() => setShowQAModal(true)}
             onOpenOptimize={() => setShowOptimizeModal(true)}
+            onApplyGaps={handleOptimizeResume}
           />
         </div>
       )}
       
-      {/* Right Panel: Placeholder (Only visible when NO result) */}
-      {!result && (
+      {/* Right Panel: Placeholder (Only visible when NO result and not on Cost & Models tab) */}
+      {!result && activeTab !== 'cost' && (
         <div className="hidden lg:flex flex-1 items-center justify-center bg-neutral-950 opacity-50 bg-[radial-gradient(#262626_1px,transparent_1px)] [background-size:16px_16px]">
           <div className="text-center p-12">
             <div className="w-24 h-24 border border-neutral-800 rounded-full flex items-center justify-center mx-auto mb-6 text-neutral-700">

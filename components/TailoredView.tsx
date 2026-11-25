@@ -1,10 +1,13 @@
-import React, { useState } from 'react';
+import React, { useMemo, useState } from 'react';
 import { TailoredResume, TargetRole } from '../types';
 import { Button } from './Button';
+import { GapAnalysisView } from './GapAnalysisView';
+import { analyzeResumeGaps } from '../utils/gapAnalyzer';
 
 interface TailoredViewProps {
   data: TailoredResume;
   role: TargetRole;
+  jobDescription: string;
   candidateName: string;
   contactInfo: {
     location: string;
@@ -15,20 +18,28 @@ interface TailoredViewProps {
   onBack: () => void;
   onOpenQA?: () => void;
   onOpenOptimize?: () => void;
+  onApplyGaps?: (prompt: string) => Promise<void>;
 }
 
 export const TailoredView: React.FC<TailoredViewProps> = ({ 
   data, 
   role, 
+  jobDescription,
   candidateName, 
   contactInfo,
   onBack, 
   onOpenQA,
-  onOpenOptimize
+  onOpenOptimize,
+  onApplyGaps
 }) => {
-  const [viewMode, setViewMode] = useState<'preview' | 'ats' | 'email' | 'analysis'>('preview');
+  const [viewMode, setViewMode] = useState<'preview' | 'ats' | 'email' | 'gaps' | 'analysis'>('preview');
   const [copied, setCopied] = useState(false);
   const [isDownloadingPdf, setIsDownloadingPdf] = useState(false);
+
+  const quickGapSummary = useMemo(
+    () => analyzeResumeGaps(jobDescription, data),
+    [jobDescription, data]
+  );
 
   const handleCopy = (text: string) => {
     navigator.clipboard.writeText(text);
@@ -266,31 +277,46 @@ export const TailoredView: React.FC<TailoredViewProps> = ({
       </div>
 
       {/* Tabs - Hidden on Print */}
-      <div className="flex border-b border-neutral-800 bg-neutral-950 print:hidden">
+      <div className="flex border-b border-neutral-800 bg-neutral-950 overflow-x-auto print:hidden">
         <button 
           onClick={() => setViewMode('preview')}
-          className={`flex-1 py-4 text-sm font-medium transition-colors ${viewMode === 'preview' ? 'text-white border-b-2 border-white' : 'text-neutral-500 hover:text-neutral-300'}`}
+          className={`flex-1 py-4 px-3 text-sm font-medium transition-colors whitespace-nowrap shrink-0 ${viewMode === 'preview' ? 'text-white border-b-2 border-white' : 'text-neutral-500 hover:text-neutral-300'}`}
         >
           Visual Preview
         </button>
         <button 
           onClick={() => setViewMode('ats')}
-          className={`flex-1 py-4 text-sm font-medium transition-colors ${viewMode === 'ats' ? 'text-white border-b-2 border-white' : 'text-neutral-500 hover:text-neutral-300'}`}
+          className={`flex-1 py-4 px-3 text-sm font-medium transition-colors whitespace-nowrap shrink-0 ${viewMode === 'ats' ? 'text-white border-b-2 border-white' : 'text-neutral-500 hover:text-neutral-300'}`}
         >
           ATS / Raw Text
         </button>
         <button 
           onClick={() => setViewMode('email')}
-          className={`flex-1 py-4 text-sm font-medium transition-colors ${viewMode === 'email' ? 'text-white border-b-2 border-white' : 'text-neutral-500 hover:text-neutral-300'}`}
+          className={`flex-1 py-4 px-3 text-sm font-medium transition-colors whitespace-nowrap shrink-0 ${viewMode === 'email' ? 'text-white border-b-2 border-white' : 'text-neutral-500 hover:text-neutral-300'}`}
         >
           Email / WhatsApp
         </button>
         <button 
+          onClick={() => setViewMode('gaps')}
+          className={`flex-1 py-4 px-3 text-sm font-medium transition-colors whitespace-nowrap shrink-0 flex items-center justify-center gap-1.5 ${viewMode === 'gaps' ? 'text-white border-b-2 border-white' : 'text-neutral-500 hover:text-neutral-300'}`}
+        >
+          <span>Gap Analysis</span>
+          {quickGapSummary.totalJdTerms > 0 && (
+            <span
+              className={`text-xs font-mono tabular-nums ${
+                quickGapSummary.missingCount > 0 ? 'text-amber-400' : 'text-emerald-400'
+              }`}
+            >
+              · {quickGapSummary.missingCount > 0 ? `${quickGapSummary.missingCount} missing` : `${quickGapSummary.coveragePct}%`}
+            </span>
+          )}
+        </button>
+        <button 
           onClick={() => setViewMode('analysis')}
-          className={`flex-1 py-4 text-sm font-medium transition-colors flex items-center justify-center gap-1.5 ${viewMode === 'analysis' ? 'text-emerald-400 border-b-2 border-emerald-400' : 'text-neutral-500 hover:text-neutral-300'}`}
+          className={`flex-1 py-4 px-3 text-sm font-medium transition-colors whitespace-nowrap shrink-0 flex items-center justify-center gap-1.5 ${viewMode === 'analysis' ? 'text-emerald-400 border-b-2 border-emerald-400' : 'text-neutral-500 hover:text-neutral-300'}`}
         >
           <span>JD Match Audit</span>
-          <span className="text-xs bg-emerald-950 border border-emerald-800 text-emerald-400 px-1.5 py-0.5 rounded font-bold">{data.analysis.matchScore}%</span>
+          <span className="text-xs font-mono tabular-nums text-emerald-400">· {data.analysis.matchScore}%</span>
         </button>
       </div>
 
@@ -398,6 +424,15 @@ export const TailoredView: React.FC<TailoredViewProps> = ({
                </Button>
             </div>
           </div>
+        )}
+
+        {viewMode === 'gaps' && (
+          <GapAnalysisView
+            tailoredResume={data}
+            jobDescription={jobDescription}
+            targetRole={role}
+            onApplyGaps={onApplyGaps}
+          />
         )}
 
         {viewMode === 'analysis' && (

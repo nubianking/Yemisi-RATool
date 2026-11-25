@@ -73,25 +73,6 @@ export const CLOUD_ENGINEER_PROFILE: ResumeData = {
         "Documented standard operating procedures (SOPs), change management records, and incident response workflows for system recovery, compliance audits, and knowledge transfer to distributed operations teams.",
         "Provided 24/7 on-call support for critical cloud infrastructure, performing root cause analysis (RCA) for outages, implementing CloudWatch Alarms and preventive monitoring, and reducing recurring incidents by 40%."
       ]
-    },
-    {
-      company: "TECHNICAL PROJECT",
-      role: "Multi-Cloud Landing Zone & Governance Framework",
-      duration: "Terraform, Bicep, Azure Policy, AWS Organizations",
-      bullets: [
-        "Designed a hybrid cloud governance framework using AWS Organizations with SCPs and Azure Management Groups, deploying Terraform modules for AWS account baselines and Bicep templates for Azure subscription guardrails.",
-        "Implemented Azure Policy initiatives for mandatory resource tagging, encryption-at-rest, NSG flow logging, and public exposure prevention, configuring Azure Entra ID RBAC for least-privilege access control.",
-        "Established centralized logging and audit trails by integrating CloudTrail, Azure Activity Logs, and NSG Flow Logs into Azure Monitor Log Analytics and Splunk for cross-platform security visibility."
-      ]
-    },
-    {
-      company: "TECHNICAL PROJECT",
-      role: "Kubernetes GitOps & DevSecOps Pipeline",
-      duration: "GitHub Actions, Helm, ArgoCD, OPA, Falco",
-      bullets: [
-        "Built a GitOps workflow using GitHub Actions to automate Docker image builds, vulnerability scanning with Trivy, and Helm chart deployments to EKS clusters with ArgoCD sync policies.",
-        "Implemented Open Policy Agent (OPA) Gatekeeper admission controller policies and Falco runtime threat detection to validate pod security standards and block non-compliant deployments before cluster admission."
-      ]
     }
   ]
 };
