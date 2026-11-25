@@ -8,7 +8,7 @@ export const CLOUD_ENGINEER_PROFILE: ResumeData = {
     phone: "(929)-256-8059",
     linkedin: "linkedin.com/in/oladunni-babs-b2730134a"
   },
-  summary: "Senior Cloud Engineer with 5+ years of progressive experience architecting secure, scalable multi-cloud infrastructure across AWS, Azure, and GCP. Expert in Infrastructure as Code (Terraform, CloudFormation, Bicep), Kubernetes orchestration, CI/CD pipeline engineering, and cloud security governance. Proven track record delivering $150K+ in cloud cost optimization, reducing security vulnerabilities by 65%, and maintaining 99.99% infrastructure availability. AWS Solutions Architect Associate with deep expertise in landing zone design, policy-as-code, Zero Trust networking, and compliance automation (SOC 2, PCI-DSS, NIST). Seeking to drive cloud platform engineering and DevSecOps excellence.",
+  summary: "Cloud Engineer with 5 years of progressive Cloud Engineering experience architecting secure, scalable multi-cloud infrastructure across AWS, Azure, and GCP. Expert in Infrastructure as Code (Terraform, CloudFormation, Bicep), Kubernetes orchestration, CI/CD pipeline engineering, and cloud security governance. Proven track record delivering $150K+ in cloud cost optimization, reducing security vulnerabilities by 65%, and maintaining 99.99% infrastructure availability. AWS Solutions Architect Associate with deep expertise in landing zone design, policy-as-code, Zero Trust networking, and compliance automation (SOC 2, PCI-DSS, NIST). Seeking to drive cloud platform engineering and DevSecOps excellence.",
   skills: [
     "Cloud Platforms & Governance: AWS (EC2, S3, IAM, RDS, VPC, CloudWatch, CloudTrail, Lambda, SNS, CloudFront, Backup, Systems Manager, Secrets Manager, EKS, ECS, Organizations, Control Tower, Config, SCPs), Azure (Management Groups, Policy, Entra ID, NSGs, Monitor, Log Analytics, Key Vault, Private Endpoints), GCP (Compute Engine, Cloud Monitoring, Cloud IAM)",
     "Infrastructure as Code: Terraform, AWS CloudFormation, Bicep, ARM Templates, AWS CDK, Pulumi, Ansible",
@@ -31,7 +31,7 @@ export const CLOUD_ENGINEER_PROFILE: ResumeData = {
   experience: [
     {
       company: "Fireserv",
-      role: "Senior Cloud Engineer",
+      role: "Cloud Engineer",
       duration: "December 2021 – Present",
       bullets: [
         "Architected multi-account AWS landing zones using AWS Organizations and Control Tower, deploying Service Control Policies (SCPs) and guardrails to enforce security baselines across 15+ production, staging, and development accounts.",
@@ -98,7 +98,7 @@ export const CLOUD_ENGINEER_PROFILE: ResumeData = {
 
 export const SOFTWARE_ENGINEER_PROFILE: ResumeData = {
   ...CLOUD_ENGINEER_PROFILE,
-  summary: "Senior DevOps and Software Engineer with 5+ years of experience specializing in reliable, automated software delivery, Kubernetes orchestration, and modern cloud platforms. Expert in containerization, GitOps methodologies (ArgoCD, Helm), and CI/CD automation across GitLab CI and GitHub Actions. Strong background in Infrastructure as Code with Terraform and Ansible, database reliability, and automated system scripting using Python and Go. Proven track record driving DevOps maturity, SRE principles, and high-performance multi-cloud architecture.",
+  summary: "Cloud, DevOps, and Software Engineer with 5 years of Cloud Engineering experience specializing in reliable, automated software delivery, Kubernetes orchestration, and modern cloud platforms. Expert in containerization, GitOps methodologies (ArgoCD, Helm), and CI/CD automation across GitLab CI and GitHub Actions. Strong background in Infrastructure as Code with Terraform and Ansible, database reliability, and automated system scripting using Python and Go. Proven track record driving DevOps maturity, SRE principles, and high-performance multi-cloud architecture.",
   skills: [
     "Programming & Scripting: Python (Boto3), Bash, Go, PowerShell, SQL",
     "CI/CD & DevSecOps: GitHub Actions, GitLab CI, Jenkins, ArgoCD, Helm, Docker, GitOps, Snyk, Checkov",

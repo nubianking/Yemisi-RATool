@@ -52,12 +52,12 @@ const App: React.FC = () => {
           (exp: any) => exp.company === 'University at Buffalo' && exp.role?.toLowerCase().includes('intern')
         );
         const hasOldBrooklyn = parsed.contact?.location === 'Brooklyn, New York';
-        const hasOldFireservRole = parsed.experience?.some(
-          (exp: any) => exp.company === 'Fireserv' && exp.role === 'Cloud Engineer'
-        );
+        const hasSeniorRoleOrSummary =
+          parsed.experience?.some((exp: any) => /\b(senior|sr\.?)\b/i.test(exp.role || '')) ||
+          /^(senior|sr\.?)\s+/i.test(parsed.summary || '');
         const hasFewCertifications = !parsed.certifications || parsed.certifications.length < 3;
 
-        if (hasOldOluwayemisi || hasEliteHorizon || hasOldKhaime || hasOldKhamieTypo || hasBuffalo || hasOldBrooklyn || hasOldFireservRole || hasFewCertifications) {
+        if (hasOldOluwayemisi || hasEliteHorizon || hasOldKhaime || hasOldKhamieTypo || hasBuffalo || hasOldBrooklyn || hasSeniorRoleOrSummary || hasFewCertifications) {
           localStorage.removeItem('role_architect_base_profile');
           return BASE_RESUME;
         }
@@ -273,7 +273,7 @@ const App: React.FC = () => {
                   <button
                     onClick={() => setBaseProfile(BASE_PROFILES.CLOUD_ENGINEER)}
                     className={`p-3 text-xs font-medium border transition-all ${
-                      baseProfile.summary.includes('Cloud Engineer') 
+                      baseProfile.summary.includes('Cloud Engineer') && !baseProfile.summary.includes('Software Engineer')
                         ? 'bg-white text-black border-white' 
                         : 'bg-neutral-900 text-neutral-400 border-neutral-800 hover:border-neutral-600'
                     }`}

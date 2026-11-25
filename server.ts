@@ -139,6 +139,29 @@ async function generateWithGemini(params: {
   throw new Error(cleaned.message || "All AI models failed to respond. Please try again.");
 }
 
+function sanitizeSeniorFromRoles(resume: TailoredResume): TailoredResume {
+  const stripRoleTitleSenior = (title: string) =>
+    title
+      .replace(/\b(Senior|Sr\.?)\s+/gi, "")
+      .replace(/\s{2,}/g, " ")
+      .trim();
+
+  if (Array.isArray(resume.experience)) {
+    resume.experience = resume.experience.map((exp) => ({
+      ...exp,
+      role: exp.role ? stripRoleTitleSenior(exp.role) : exp.role,
+    }));
+  }
+
+  if (typeof resume.summary === "string") {
+    resume.summary = resume.summary
+      .replace(/^(Senior|Sr\.?)\s+/i, "")
+      .replace(/\b(Senior|Sr\.?)\s+(Cloud|DevSecOps|DevOps|IAM|Site Reliability|SRE|Software|AWS|Azure|GCP|Security|Infrastructure|Platform|Systems|Solutions)\b/gi, "$2");
+  }
+
+  return resume;
+}
+
 const resumeSchema: Schema = {
   type: Type.OBJECT,
   properties: {
@@ -217,13 +240,17 @@ async function startServer() {
     2. EXPERIENCE DUTY STRUCTURE:
        - Every bullet point under every job experience must strictly follow this high-performance formula:
          [Strong JD-aligned Action Verb] + [Exact JD Responsibility / Technical Stack / Architecture Scope] + [Execution Context / Methodology] + [Measurable Business Metric / Performance Outcome / Efficiency Improvement / Security Hardening Win].
-       - Generate AT LEAST 8 to 12 dense, technically rich, and quantifiable bullet points per role (especially 10-12 for senior and recent roles).
-       - Maintain chronological progression: senior/current roles cover architecture, governance, leadership, and high-impact delivery matching the JD; prior roles reinforce foundational execution of the JD requirements.
+       - Generate AT LEAST 8 to 12 dense, technically rich, and quantifiable bullet points per role (especially 10-12 for current and recent roles).
+       - Maintain chronological progression: current/recent roles cover architecture, governance, technical ownership, and high-impact delivery matching the JD; prior roles reinforce foundational execution of the JD requirements.
 
-    3. FACTUAL INTEGRITY WITH HIGH RELEVANCE:
-       - Preserve the candidate's factual company names, titles, and dates from the base profile.
+    3. FACTUAL INTEGRITY, 5 YEARS CLOUD ENGINEERING EXPERIENCE & NO "SENIOR" ROLE LABELS (MANDATORY):
+       - The generated CV MUST strictly maintain and reflect **5 years of Cloud Engineering experience**.
+       - NEVER inflate (e.g., 7+, 8+, 10+ years) or reduce (e.g., 2–3 years) the candidate's years of experience, even if the Job Description requests a different number of years.
+       - NEVER use the word "Senior" or "Sr." when describing the candidate's roles, titles, or professional identity — not in the Professional Summary, not in any experience job title ("role"), and not in experience bullet points describing her position (e.g., use "Cloud Engineer", "Cloud DevOps Engineer", "Cloud Security Engineer", NEVER "Senior Cloud Engineer" or "Sr. Cloud Engineer", even if the Job Description title includes "Senior").
+       - Keep **5 years of Cloud Engineering experience** clearly anchored in the Professional Summary and reinforced throughout the career trajectory, even when tailoring for adjacent roles (Cloud Security, DevSecOps, IAM, DevOps, SRE, Cloud Architect, or Software Engineer).
+       - Preserve the candidate's factual company names, titles (without "Senior"), and dates from the base profile without inventing earlier roles or altering timelines.
        - Elevate and reframe the narrative of their actual duties to match the exact vocabulary, problems, and technical expectations of the target JD.
-       - Contextualize accomplishments so an ATS parser and senior engineering manager evaluate the candidate at a 98%–100% match.
+       - Contextualize accomplishments so an ATS parser and hiring engineering manager evaluate the candidate at a 98%–100% match.
 
     4. TECHNICAL DEPTH:
        - Never summarize, dilute, or write generic bullet points.
@@ -255,11 +282,12 @@ async function startServer() {
 
     INSTRUCTIONS:
     1. Analyze the Job Description (JD) comprehensively for all core duties, technical requirements, tools, frameworks, protocols, and performance metrics.
-    2. Rewrite the "Summary" into a powerful, executive summary (4-6 sentences) explicitly aligning the candidate's senior profile with the top 4-5 duties and requirements of the JD.
+    2. Rewrite the "Summary" into a powerful, executive summary (4-6 sentences) explicitly stating **5 years of Cloud Engineering experience** and aligning the candidate's profile with the top 4-5 duties and requirements of the JD. Do NOT change "5 years" to another number to match the JD, and do NOT include the word "Senior" or "Sr." when describing her role or title.
     3. Reconstruct the "Experience" duties:
+       - Preserve the candidate's exact factual companies, titles (never using "Senior" or "Sr."), and employment dates from the base resume so the CV maintains a consistent 5-year Cloud Engineering career timeline.
        - EXPAND on the base resume's points. Do not truncate, summarize, or omit them.
        - Ensure a minimum of 8 to 12 dense, technically authoritative bullet points per job role.
-       - Every bullet point must be a tailored duty directly aligned to the JD's requirements and stated responsibilities.
+       - Every bullet point must be a tailored duty directly aligned to the JD's requirements and stated responsibilities while retaining strong Cloud Engineering depth.
        - Strictly enforce the structure: [Action Verb from JD] + [Deep Technical Context & Specific JD Duty / Platform] + [Specific Tools & Methodologies from JD] + [Quantitative Business / Operational Impact].
        - Match the JD's terminology with 100% precision.
        - Guarantee that the candidate's duties demonstrate mastery of 98% to 100% of the responsibilities outlined in the JD.
@@ -282,7 +310,7 @@ async function startServer() {
         throw new Error("No response generated from AI model");
       }
 
-      const tailoredData = JSON.parse(response.text) as TailoredResume;
+      const tailoredData = sanitizeSeniorFromRoles(JSON.parse(response.text) as TailoredResume);
       const rawScore = Number(tailoredData.analysis?.matchScore) || 99;
       tailoredData.analysis.matchScore = Math.min(100, Math.max(98, Math.round(rawScore)));
 
@@ -317,12 +345,14 @@ async function startServer() {
     Maintain the exact same JSON schema.
     Do not lose any information unless explicitly asked to remove it.
     CRITICAL: Ensure that all duties under professional experiences remain deeply tailored to the target role and Job Description at a 98 - 100 MATCHING SCORE. Analysis matchScore MUST be strictly between 98 and 100.
+    CRITICAL: Maintain the candidate's **5 years of Cloud Engineering experience** consistently in the summary and employment timeline (do not inflate or reduce the years of experience, and preserve factual employment dates unless explicitly instructed otherwise).
+    CRITICAL: NEVER include the word "Senior" or "Sr." when describing the candidate's roles, job titles, or professional summary.
     
     CURRENT RESUME:
     ${JSON.stringify(currentResume)}
     `;
 
-      const prompt = `USER INSTRUCTION:\n"${userPrompt}"\n\nReturn the updated resume in the required JSON format, ensuring duties under experiences maintain a 98 - 100 matching score.`;
+      const prompt = `USER INSTRUCTION:\n"${userPrompt}"\n\nReturn the updated resume in the required JSON format, ensuring duties under experiences maintain a 98 - 100 matching score, consistently reflect 5 years of Cloud Engineering experience, and never include "Senior" or "Sr." in her role titles or descriptions.`;
 
       const response = await generateWithGemini({
         contents: [{ role: 'user', parts: [{ text: prompt }] }],
@@ -335,7 +365,7 @@ async function startServer() {
         throw new Error("No response generated from AI model");
       }
 
-      const tailoredData = JSON.parse(response.text) as TailoredResume;
+      const tailoredData = sanitizeSeniorFromRoles(JSON.parse(response.text) as TailoredResume);
       const rawScore = Number(tailoredData.analysis?.matchScore) || 99;
       tailoredData.analysis.matchScore = Math.min(100, Math.max(98, Math.round(rawScore)));
 
@@ -379,6 +409,8 @@ async function startServer() {
 
     TONE & STYLE:
     - Confidence without arrogance.
+    - Consistently position the candidate with **5 years of Cloud Engineering experience** (do not inflate or reduce the years of experience).
+    - Do NOT use the word "Senior" or "Sr." when describing the candidate's current or past roles or title.
     - Evidence-based statements (cite specific technical wins from the resume).
     - "Hook" opening that addresses the company's specific needs found in the JD.
     - No generic fluff ("I am a hard worker").
@@ -435,6 +467,7 @@ async function startServer() {
       const systemPrompt = `
     You are an intelligent Application Question Assistant.
     Answer employer application questions based on candidate profile.
+    Consistently reflect the candidate's **5 years of Cloud Engineering experience** (do not inflate or reduce the years of experience), and do NOT use the word "Senior" or "Sr." when describing her current or past roles or title.
 
     TARGET ROLE: ${targetRole}
     WORD LIMIT: ${wordLimit ? wordLimit + " words" : "Concise (approx 200 words)"}
